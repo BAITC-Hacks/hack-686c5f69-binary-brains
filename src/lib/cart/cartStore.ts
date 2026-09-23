@@ -1,5 +1,6 @@
 import { createDefaultCatalogClient } from "../assistant/catalogClient";
 import type { Product } from "../assistant/types";
+import { createEktSource, createCatalogService } from "../catalog/index.ts";
 
 export type CartLine = {
   productId: string;
@@ -100,7 +101,26 @@ function requireCart(id: string): CartSession {
 async function fetchProduct(id: string): Promise<Product> {
   let product: Product | null;
   try {
-    product = await createDefaultCatalogClient().getProduct(id);
+    const username = process.env.EKT_API_USERNAME || process.env.EKT_API_USER;
+    const password = process.env.EKT_API_PASSWORD;
+    if (username && password) {
+      // The catalog owner's service re-fetches product detail rather than trusting search results.
+      const fresh = await createCatalogService(createEktSource({ username, password })).getProduct(id);
+      product = {
+        id: fresh.id,
+        sku: fresh.article,
+        name: fresh.name,
+        price: fresh.price ?? undefined,
+        currency: fresh.currency ?? undefined,
+        characteristics: Object.fromEntries(Object.entries(fresh.properties).map(([key, value]) => [key, String(value)])),
+        availability: {
+          status: fresh.availability,
+          quantity: fresh.quantity ?? undefined,
+        },
+      };
+    } else {
+      product = await createDefaultCatalogClient().getProduct(id);
+    }
   } catch {
     throw new CartError("Не удалось проверить актуальный остаток. Попробуйте позже.", 503);
   }
