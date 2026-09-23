@@ -71,7 +71,7 @@ export function normalizeProduct(input: unknown, source: Product["source"]): Pro
   // Match explicit ampere units only: DRX250 and 18kA are not nominal-current evidence.
   // Descriptions may describe a whole series (6–63 A) or breaking capacity (4500 A).
   // Only a single explicitly labelled nominal-current value is product evidence.
-  const labelledCurrents = [...description.matchAll(/номинальн(?:ый|ым)\s+ток(?:ом)?\s*[:—–-]?\s*(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])/giu)]
+  const labelledCurrents = [...description.matchAll(/номинальн(?:ый|ым)\s+ток(?:ом)?\s*[:—–-]?\s*(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])(?!\s*(?:[-–—,]\s*|до\s+)\d)/giu)]
     .map(match => Number(match[1].replace(",", ".")));
   const currents = [...name.name.matchAll(/(?:^|[^\p{L}\p{N}])(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])/giu)]
     .map(match => Number(match[1].replace(",", ".")));
@@ -88,6 +88,15 @@ export function normalizeProduct(input: unknown, source: Product["source"]): Pro
   for (const key of Object.keys(properties)) if (key.startsWith("TEXT_")) delete properties[key];
   Object.assign(properties, textProperties.properties);
   conflicts.push(...textProperties.conflicts);
+  if (luminaireCategory && properties.TIP_TSOKOLYA !== undefined) {
+    const apiSocket = String(properties.TIP_TSOKOLYA).trim().toUpperCase().replace(/Е/g, "E");
+    const textSockets = [...new Set([...`${name.name} ${description}`.matchAll(/(?:\d+\s*[xх×]\s*|(?<![a-z]))[eе](\d{2})(?!\d)/giu)]
+      .map(match => `E${match[1]}`))];
+    if (/^E\d{2}$/.test(apiSocket) && textSockets.some(socket => socket !== apiSocket)) {
+      conflicts.push({ property: "TIP_TSOKOLYA", values: [...new Set([apiSocket, ...textSockets])],
+        message: "Цоколь в свойствах и тексте товара противоречит друг другу; требуется уточнение." });
+    }
+  }
   const stores = Array.isArray(raw.stores) ? raw.stores.flatMap(value => {
     const store = record(value);
     if (!["string", "number"].includes(typeof store.id) || typeof store.name !== "string") return [];

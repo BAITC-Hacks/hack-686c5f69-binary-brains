@@ -22,7 +22,7 @@ function measurement(value: PropertyValue, dimension: "current" | "voltage"): nu
 }
 
 export function equivalentProperty(key: string, left: PropertyValue, right: PropertyValue): boolean {
-  const dimension = dimensions[key];
+  const dimension = Object.hasOwn(dimensions, key) ? dimensions[key] : undefined;
   if (!dimension) return text(left) === text(right);
   const a = measurement(left, dimension);
   const b = measurement(right, dimension);

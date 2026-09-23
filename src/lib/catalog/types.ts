@@ -34,7 +34,7 @@ export interface Product extends ProductSummary {
 export interface CatalogSource {
   mode: "ekt_api" | "demo";
   listPage(page: number): Promise<unknown>;
-  getDetail(id: string): Promise<unknown>;
+  getDetail(id: string, options?: { signal?: AbortSignal }): Promise<unknown>;
 }
 
 export interface CatalogIndex {

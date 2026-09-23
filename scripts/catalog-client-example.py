@@ -27,7 +27,6 @@ if __name__ == "__main__":
         "category": "Светильники для внутреннего освещения",
         "requiredProperties": ["TIP_TSOKOLYA", "SPOSOB_MONTAZHA", "TIP_ISTOCHNIKA", "MATERIAL_KORPUSA",
                                "TIP_SVETILNIKA", "TEXT_LAMP_COUNT", "TEXT_DIAMETER_MM", "TEXT_IP_RATING"],
-        "candidateIds": ["23181"],
     } if args.live else {
         "category": "circuit-breaker",
         "requiredProperties": ["NOMINALNYY_TOK", "POLES", "BREAKING_CAPACITY_KA", "TRIP_TYPE", "VOLTAGE"],
@@ -36,5 +35,6 @@ if __name__ == "__main__":
         "productId": product["id"],
         **profile,
         "quantity": 1 if args.live else 2,
+        "limit": 1 if args.live else 3,
     })
     print(json.dumps({"product": product, "alternatives": alternatives}, ensure_ascii=False, indent=2))

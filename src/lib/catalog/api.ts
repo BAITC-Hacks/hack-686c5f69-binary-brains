@@ -13,11 +13,12 @@ export function createEktSource(options: {
   }
   const request = options.fetchImpl ?? fetch;
   const authorization = `Basic ${Buffer.from(`${options.username}:${options.password}`).toString("base64")}`;
-  async function read(path: string): Promise<unknown> {
+  async function read(path: string, signal?: AbortSignal): Promise<unknown> {
     try {
+      const timeout = AbortSignal.timeout(options.timeoutMs ?? 8000);
       const response = await request(`https://ekt.kz/api/${path}`, {
         headers: { Authorization: authorization, Accept: "application/json" },
-        signal: AbortSignal.timeout(options.timeoutMs ?? 8000),
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
         redirect: "error", cache: "no-store",
       });
       if (!response.ok) {
@@ -40,9 +41,9 @@ export function createEktSource(options: {
       if (!Number.isSafeInteger(page) || page < 1) throw new CatalogError("INPUT", "Некорректный номер страницы.");
       return read(`products?page=${page}`);
     },
-    getDetail(id) {
+    getDetail(id, requestOptions) {
       if (!/^\d+$/.test(id)) throw new CatalogError("INPUT", "Некорректный id товара.");
-      return read(`products/detail?id=${encodeURIComponent(id)}`);
+      return read(`products/detail?id=${encodeURIComponent(id)}`, requestOptions?.signal);
     },
   };
 }

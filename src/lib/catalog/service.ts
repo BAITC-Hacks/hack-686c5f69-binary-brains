@@ -46,8 +46,8 @@ export function createCatalogService(source: CatalogSource) {
         indexedAt: snapshot.indexedAt, source: snapshot.source },
       warning: matches.length === 0 && !snapshot.complete ? "Не найдено в загруженной выборке; отсутствие во всём каталоге не подтверждено." : null };
   }
-  async function getProduct(id: string): Promise<Product> {
-    const product = normalizeProduct(await source.getDetail(id), source.mode);
+  async function getProduct(id: string, options?: { signal?: AbortSignal }): Promise<Product> {
+    const product = normalizeProduct(await source.getDetail(id, options), source.mode);
     if (product.id !== id) throw new CatalogError("INVALID_DATA", "API вернул другой id товара.");
     return product;
   }

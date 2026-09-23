@@ -53,7 +53,7 @@ export function createCatalogHttpServer(catalog: CatalogService) {
         const body = await readJson(request);
         if (typeof body.productId !== "string" || typeof body.category !== "string" ||
             !Array.isArray(body.requiredProperties) || !body.requiredProperties.every(key => typeof key === "string") ||
-            ["quantity", "maxCandidates", "limit"].some(key => body[key] !== undefined && typeof body[key] !== "number")) {
+            ["quantity", "maxCandidates", "limit", "maxDurationMs"].some(key => body[key] !== undefined && typeof body[key] !== "number")) {
           throw new CatalogError("INPUT", "Нужны productId, category, requiredProperties и числовые лимиты.");
         }
         send(response, 200, await findAlternatives(catalog, body.productId, {
@@ -62,6 +62,7 @@ export function createCatalogHttpServer(catalog: CatalogService) {
           maxCandidates: body.maxCandidates as number | undefined,
           limit: body.limit as number | undefined,
           candidateIds: body.candidateIds as string[] | undefined,
+          maxDurationMs: body.maxDurationMs as number | undefined,
         }));
         return;
       }

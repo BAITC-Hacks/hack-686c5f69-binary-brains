@@ -7,12 +7,14 @@ try {
     username: process.env.EKT_API_USERNAME ?? "", password: process.env.EKT_API_PASSWORD ?? "",
   }));
   const started = performance.now();
+  const targeted = process.argv.includes("--targeted");
+  if (!targeted) await catalog.refreshIndex({ maxPages: 5 });
   const original = await catalog.getProduct("18161");
   const result = await findAlternatives(catalog, original.id, {
-    ...indoorE27Profile, candidateIds: ["23181"], quantity: 1,
+    ...indoorE27Profile, ...(targeted ? { candidateIds: ["23181"] } : {}), quantity: 1, limit: 1,
   });
   console.log(JSON.stringify({
-    source: original.source, checkedAt: original.checkedAt,
+    source: original.source, checkedAt: original.checkedAt, searchMode: targeted ? "candidate_ids" : "catalog_index",
     original: { id: original.id, article: original.article, name: original.name, quantity: original.quantity },
     candidates: result.items.map(item => ({ id: item.product.id, article: item.product.article,
       name: item.product.name, quantity: item.product.quantity, reasons: item.reasons,
