@@ -16,6 +16,7 @@ export type Product = {
   characteristics?: Record<string, string>;
   certificateUrl?: string;
   availability: ProductAvailability;
+  alternativeReason?: string;
 };
 
 export type ProductCard = {

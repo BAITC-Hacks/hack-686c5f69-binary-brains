@@ -1,4 +1,5 @@
 import type { CatalogClient, CatalogSearchResult, Product } from "./types";
+import { createCatalogClientFromEnv } from "./ektCatalogClient";
 
 const demoProducts: Product[] = [
   {
@@ -65,3 +66,7 @@ export const demoCatalogClient: CatalogClient = {
       }));
   },
 };
+
+export function createDefaultCatalogClient(): CatalogClient {
+  return createCatalogClientFromEnv() || demoCatalogClient;
+}
