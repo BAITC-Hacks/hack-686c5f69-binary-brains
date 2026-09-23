@@ -8,7 +8,7 @@ export type AssistantIntent =
 export function detectIntent(message: string): AssistantIntent {
   const normalized = message.toLowerCase();
 
-  if (/(да|подтверждаю|добавь|добавить|оформи|в корзину)/i.test(normalized)) {
+  if (/^(?:да[, .!]*добавь|подтверждаю|добавь(?:\s+в\s+корзину)?)\s*[.!]?$/i.test(normalized.trim())) {
     return "confirm_add_to_cart";
   }
 
