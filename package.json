@@ -8,6 +8,8 @@
     "demo:catalog": "node scripts/catalog-demo.ts",
     "check:catalog-live": "node --env-file=.env.local scripts/catalog-live.ts",
     "start:catalog:demo": "node scripts/catalog-server.ts --demo",
-    "start:catalog": "node --env-file=.env.local scripts/catalog-server.ts"
+    "start:catalog": "node --env-file=.env.local scripts/catalog-server.ts",
+    "audit:catalog": "node --env-file=.env.local scripts/catalog-audit.ts",
+    "check:alternative-live": "node --env-file=.env.local scripts/catalog-live-alternative.ts"
   }
 }

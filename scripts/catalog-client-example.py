@@ -1,5 +1,6 @@
 """Stdlib-only example for participant 2. Start npm run start:catalog:demo first."""
 import json
+import argparse
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -14,14 +15,26 @@ def catalog_request(path, body=None):
 
 
 if __name__ == "__main__":
-    search = catalog_request("/products/search?" + urlencode({"q": "DEMO-160-OLD"}))
+    parser = argparse.ArgumentParser(description="Catalog HTTP integration example")
+    parser.add_argument("--live", action="store_true", help="Use the verified live luminaire scenario")
+    args = parser.parse_args()
+    article = "150100708_" if args.live else "DEMO-160-OLD"
+    search = catalog_request("/products/search?" + urlencode({"q": article}))
     if not search["items"]:
-        raise SystemExit("Demo product not found. Start the server with --demo.")
+        raise SystemExit("Product not found. Check the server mode and indexed pages.")
     product = catalog_request("/products/" + search["items"][0]["id"])
-    alternatives = catalog_request("/alternatives", {
-        "productId": product["id"],
+    profile = {
+        "category": "Светильники для внутреннего освещения",
+        "requiredProperties": ["TIP_TSOKOLYA", "SPOSOB_MONTAZHA", "TIP_ISTOCHNIKA", "MATERIAL_KORPUSA",
+                               "TIP_SVETILNIKA", "TEXT_LAMP_COUNT", "TEXT_DIAMETER_MM", "TEXT_IP_RATING"],
+        "candidateIds": ["23181"],
+    } if args.live else {
         "category": "circuit-breaker",
         "requiredProperties": ["NOMINALNYY_TOK", "POLES", "BREAKING_CAPACITY_KA", "TRIP_TYPE", "VOLTAGE"],
-        "quantity": 2,
+    }
+    alternatives = catalog_request("/alternatives", {
+        "productId": product["id"],
+        **profile,
+        "quantity": 1 if args.live else 2,
     })
     print(json.dumps({"product": product, "alternatives": alternatives}, ensure_ascii=False, indent=2))

@@ -61,6 +61,7 @@ export function createCatalogHttpServer(catalog: CatalogService) {
           quantity: body.quantity as number | undefined,
           maxCandidates: body.maxCandidates as number | undefined,
           limit: body.limit as number | undefined,
+          candidateIds: body.candidateIds as string[] | undefined,
         }));
         return;
       }

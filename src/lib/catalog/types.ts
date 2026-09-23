@@ -12,7 +12,7 @@ export interface ProductSummary {
 
 export interface Product extends ProductSummary {
   category: string | null;
-  categorySource: "category" | "properties.KATEGORIYA" | null;
+  categorySource: "category" | "properties.KATEGORIYA" | "properties.KATEGORIYA_SVETILNIKA" | null;
   description: string;
   quantity: number | null;
   availability: "in_stock" | "out_of_stock" | "unknown";
@@ -21,7 +21,9 @@ export interface Product extends ProductSummary {
   storesRaw: unknown;
   offersRaw: unknown;
   properties: Record<string, PropertyValue>;
+  textPropertyEvidence: Record<string, { source: "name" | "description"; text: string }>;
   certificates: { name: string; url: string }[];
+  certificateStatus: "available" | "unresolved" | "not_provided";
   minimumOrder: { rawValue: PropertyValue | null; verified: false };
   conflicts: { property: string; values: string[]; message: string }[];
   warnings: string[];

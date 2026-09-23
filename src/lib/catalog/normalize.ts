@@ -1,5 +1,7 @@
 import { CatalogError } from "./types.ts";
 import type { Product, ProductSummary, PropertyValue } from "./types.ts";
+import { extractCertificates } from "./certificates.ts";
+import { extractLuminaireProperties } from "./text-properties.ts";
 
 export function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -55,52 +57,56 @@ export function normalizeProperties(input: unknown): Record<string, PropertyValu
   return result;
 }
 
-function certificates(input: unknown): Product["certificates"] {
-  const values = Array.isArray(input) ? input : input == null ? [] : [input];
-  return values.flatMap(value => {
-    const item = record(value);
-    const url = safeUrl(typeof value === "string" ? value : item.url);
-    return url ? [{ name: typeof item.name === "string" ? item.name : "Сертификат", url }] : [];
-  });
-}
-
 export function normalizeProduct(input: unknown, source: Product["source"]): Product {
   const raw = record(input);
   const properties = normalizeProperties(raw.properties);
   const explicitCategory = typeof raw.category === "string" ? raw.category.trim() : "";
   const propertyCategory = typeof properties.KATEGORIYA === "string" ? properties.KATEGORIYA.trim() : "";
+  const luminaireCategory = typeof properties.KATEGORIYA_SVETILNIKA === "string" ? properties.KATEGORIYA_SVETILNIKA.trim() : "";
   const quantity = numeric(raw.quantity);
   const description = typeof raw.description === "string" ? raw.description : "";
   const conflicts: Product["conflicts"] = [];
   const name = normalizeSummary(input);
   const current = properties.NOMINALNYY_TOK;
   // Match explicit ampere units only: DRX250 and 18kA are not nominal-current evidence.
-  const currents = [...`${name.name} ${description}`.matchAll(/(?:^|[^\p{L}\p{N}])(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])/giu)]
+  // Descriptions may describe a whole series (6–63 A) or breaking capacity (4500 A).
+  // Only a single explicitly labelled nominal-current value is product evidence.
+  const labelledCurrents = [...description.matchAll(/номинальн(?:ый|ым)\s+ток(?:ом)?\s*[:—–-]?\s*(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])/giu)]
     .map(match => Number(match[1].replace(",", ".")));
+  const currents = [...name.name.matchAll(/(?:^|[^\p{L}\p{N}])(\d+(?:[.,]\d+)?)\s*[аa](?=$|[^\p{L}\p{N}])/giu)]
+    .map(match => Number(match[1].replace(",", ".")));
+  currents.push(...labelledCurrents);
   const propertyCurrent = typeof current === "string"
     ? numeric(current.replace(/\s*[аa]\s*$/iu, "")) : numeric(current);
   if (propertyCurrent !== null && currents.some(value => value !== propertyCurrent)) {
     conflicts.push({ property: "NOMINALNYY_TOK", values: [...new Set([...currents, propertyCurrent])].map(String),
       message: "Номинальный ток в названии/описании и свойствах противоречит друг другу; требуется уточнение." });
   }
-  const foundCertificates = certificates(raw.certificates ?? raw.certificate ?? properties.CERTIFICATE ?? properties.SERTIFIKAT);
+  const certificateResult = extractCertificates(raw, safeUrl);
+  const textProperties = luminaireCategory ? extractLuminaireProperties(name.name, description) : { properties: {}, evidence: {}, conflicts: [] };
+  // TEXT_* is a reserved derived namespace: raw values may not bypass extraction.
+  for (const key of Object.keys(properties)) if (key.startsWith("TEXT_")) delete properties[key];
+  Object.assign(properties, textProperties.properties);
+  conflicts.push(...textProperties.conflicts);
   const stores = Array.isArray(raw.stores) ? raw.stores.flatMap(value => {
     const store = record(value);
     if (!["string", "number"].includes(typeof store.id) || typeof store.name !== "string") return [];
     return [{ id: String(store.id), name: store.name, quantity: numeric(store.quantity) }];
   }) : [];
   return {
-    ...name, description, category: explicitCategory || propertyCategory || null,
-    categorySource: explicitCategory ? "category" : propertyCategory ? "properties.KATEGORIYA" : null,
+    ...name, description, category: explicitCategory || propertyCategory || luminaireCategory || null,
+    categorySource: explicitCategory ? "category" : propertyCategory ? "properties.KATEGORIYA" : luminaireCategory ? "properties.KATEGORIYA_SVETILNIKA" : null,
     quantity, availability: quantity === null ? "unknown" : quantity > 0 ? "in_stock" : "out_of_stock",
     stores, storesRaw: raw.stores ?? null, offersRaw: raw.offers ?? null, properties,
-    certificates: foundCertificates,
+    textPropertyEvidence: textProperties.evidence,
+    certificates: certificateResult.certificates, certificateStatus: certificateResult.status,
     minimumOrder: { rawValue: properties.KRATNOST_MIN ?? null, verified: false }, conflicts,
     warnings: [
       ...(source === "demo" ? ["Синтетические демонстрационные данные; не сведения магазина."] : []),
       ...(name.currency === null ? ["Валюта не указана источником."] : []),
       ...(quantity === null ? ["Остаток неизвестен."] : []),
-      ...(foundCertificates.length === 0 ? ["Ссылка на сертификат не найдена в поддерживаемых полях ответа."] : []),
+      ...(certificateResult.certificates.length === 0 ? ["Ссылка на сертификат не найдена в поддерживаемых полях ответа."] : []),
+      ...(certificateResult.unresolved ? ["Поле сертификата есть, но часть значений не содержит доступной ссылки; требуется уточнение у поставщика."] : []),
       "Семантика KRATNOST_MIN и правила доступности складов требуют подтверждения.",
       ...conflicts.map(conflict => conflict.message),
     ], source, checkedAt: new Date().toISOString(),

@@ -145,8 +145,8 @@ test("alternative has matching critical properties, stock and explicit differenc
   await catalog.refreshIndex();
   const result = await findAlternatives(catalog, "demo-1", { ...demoProfile, quantity: 2 });
   assert.deepEqual(result.items.map(item => item.product.id), ["demo-2"]);
-  assert.ok(result.items[0].reasons.some(reason => reason.includes("NOMINALNYY_TOK")));
-  assert.ok(result.items[0].differences.some(reason => reason.includes("BRAND")));
+  assert.ok(result.items[0].reasons.some(reason => reason.includes("Номинальный ток")));
+  assert.ok(result.items[0].differences.some(reason => reason.includes("Бренд")));
   assert.equal(result.items[0].requiresReview, true);
   assert.equal(result.incomplete, false);
   assert.equal((await findAlternatives(catalog, "demo-1", { ...demoProfile, quantity: 10 })).items.length, 0);

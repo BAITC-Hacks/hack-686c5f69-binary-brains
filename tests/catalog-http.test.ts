@@ -30,5 +30,14 @@ test("HTTP contract works for Python clients: search, detail, alternatives and i
   const invalid = await fetch(`${base}/alternatives`, { method: "POST",
     headers: { "Content-Type": "application/json" }, body: '{"productId":123}' });
   assert.equal(invalid.status, 400);
+  const targeted = await fetch(`${base}/alternatives`, { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productId: product.id, ...demoProfile, candidateIds: ["demo-2"] }) });
+  assert.equal(targeted.status, 200);
+  assert.equal((await targeted.json()).items[0].product.id, "demo-2");
+  const badCandidates = await fetch(`${base}/alternatives`, { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productId: product.id, ...demoProfile, candidateIds: [123] }) });
+  assert.equal(badCandidates.status, 400);
   assert.equal((await fetch(`${base}/health`)).status, 200);
 });
