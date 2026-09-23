@@ -64,7 +64,11 @@ export class AssistantService {
     }
 
     if (intent === "product_lookup") {
-      const result = await this.catalogClient.searchProducts(message);
+      const directProductId = extractProductId(message);
+      const directProduct = directProductId ? await this.catalogClient.getProduct(directProductId) : null;
+      const result = directProduct
+        ? { products: [directProduct] }
+        : await this.catalogClient.searchProducts(message);
 
       if (result.products.length === 0) {
         return this.reply(session.id, "Не нашла товар по запросу. Уточните артикул, бренд или ключевую характеристику.");
@@ -123,8 +127,22 @@ function formatProductAnswer(product: Product, quantity: number): string {
 }
 
 function extractProductId(message: string): string | null {
-  const match = message.match(/\b[A-ZА-Я0-9-]{4,}\b/i);
-  return match?.[0] || null;
+  const numericId = message.match(/\b\d{4,}\b/);
+  if (numericId) {
+    return numericId[0];
+  }
+
+  const article = message.match(/\b(?=[A-Z0-9_-]*\d)[A-Z0-9_-]{4,}\b/i);
+  if (article) {
+    return article[0];
+  }
+
+  const demoId = message.match(/\bDEMO-[A-Z0-9_-]+\b/i);
+  if (demoId) {
+    return demoId[0];
+  }
+
+  return null;
 }
 
 function extractQuantity(message: string): number | null {
