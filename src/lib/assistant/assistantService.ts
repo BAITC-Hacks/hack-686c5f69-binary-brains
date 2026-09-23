@@ -1,5 +1,5 @@
 import { demoCartClient } from "./cartClient";
-import { demoCatalogClient } from "./catalogClient";
+import { createDefaultCatalogClient } from "./catalogClient";
 import { detectIntent } from "./intentRouter";
 import { getPurchaseInfoAnswer } from "./purchaseInfo";
 import {
@@ -27,7 +27,7 @@ export class AssistantService {
   private cartClient: CartClient;
 
   constructor(options: AssistantServiceOptions = {}) {
-    this.catalogClient = options.catalogClient || demoCatalogClient;
+    this.catalogClient = options.catalogClient || createDefaultCatalogClient();
     this.cartClient = options.cartClient || demoCartClient;
   }
 
@@ -59,7 +59,7 @@ export class AssistantService {
       }
 
       const alternatives = await this.catalogClient.findAlternatives(productId, message);
-      const cards = alternatives.map((product) => this.toProductCard(product, "Подходит как возможная замена по категории и характеристикам."));
+      const cards = alternatives.map((product) => this.toProductCard(product, product.alternativeReason || "Подходит как возможная замена по категории и характеристикам."));
       return this.reply(session.id, "Нашла возможные аналоги. Проверьте характеристики перед добавлением.", { cards });
     }
 

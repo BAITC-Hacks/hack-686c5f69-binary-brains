@@ -67,7 +67,18 @@ Hackathon team repository for binary brains
 EKT_API_BASE_URL=https://ekt.kz/api
 EKT_API_USER=...
 EKT_API_PASSWORD=...
+EKT_API_SEARCH_PAGES=3
 ```
+
+Локально создайте `.env.local` по примеру `.env.example`. Файл `.env.local` исключен из Git, поэтому реальные учетные данные не попадут в коммит.
+
+Если переменные окружения заполнены, ассистент использует серверный Basic Auth клиент к ekt.kz:
+
+- `GET /products` - первая страница каталога;
+- `GET /products?page=2` - следующие страницы;
+- `GET /products/detail?id=515291` - детальная карточка товара.
+
+Если переменные окружения не заполнены, включается демонстрационный каталог.
 
 ### Ограничения демо
 
