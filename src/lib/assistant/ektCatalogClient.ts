@@ -204,10 +204,17 @@ function productMatchesQuery(product: Product, query: string): boolean {
     ...Object.values(product.characteristics || {}),
   ].filter(Boolean).join(" "));
 
-  return query
+  const queryParts = query
     .split(/\s+/)
-    .filter((part) => part.length > 2)
-    .some((part) => haystack.includes(part));
+    .map((part) => part.replace(/[^\p{L}\p{N}_-]/gu, ""))
+    .filter((part) => part.length > 2);
+
+  if (queryParts.length === 0) {
+    return false;
+  }
+
+  return queryParts.every((part) => haystack.includes(part))
+    || queryParts.some((part) => haystack.includes(part));
 }
 
 function buildAlternativeReason(source: Product, candidate: Product): string {

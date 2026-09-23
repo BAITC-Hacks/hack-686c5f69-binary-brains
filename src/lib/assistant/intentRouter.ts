@@ -20,7 +20,7 @@ export function detectIntent(message: string): AssistantIntent {
     return "alternatives";
   }
 
-  if (/(артикул|налич|цена|характерист|сертификат|товар|кабель|автомат|розет)/i.test(normalized)) {
+  if (/(артикул|налич|цена|характерист|сертификат|товар|кабель|автомат|выключател|коробк|щит|светильник|розет)/i.test(normalized)) {
     return "product_lookup";
   }
 
