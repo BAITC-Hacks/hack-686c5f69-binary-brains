@@ -32,7 +32,7 @@ export function createCatalogClientFromEnv(): CatalogClient | null {
     baseUrl,
     username,
     password,
-    searchPages: Number(process.env.EKT_API_SEARCH_PAGES || 3),
+    searchPages: Number(process.env.EKT_API_SEARCH_PAGES || 10),
   });
 }
 
@@ -44,7 +44,7 @@ class EktCatalogHttpClient {
   constructor(options: EktCatalogOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, "");
     this.authHeader = `Basic ${encodeBasicAuth(options.username, options.password)}`;
-    this.searchPages = options.searchPages || 3;
+    this.searchPages = options.searchPages || 10;
   }
 
   async searchProducts(query: string): Promise<CatalogSearchResult> {
